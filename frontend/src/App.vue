@@ -1,12 +1,13 @@
 <template>
   <n-config-provider :theme-overrides="{}">
     <n-message-provider>
-      <n-h1 style="text-align:center;margin-top:40vh">脚手架就绪</n-h1>
+      <RouterView />
     </n-message-provider>
   </n-config-provider>
 </template>
 
 <script setup lang="ts">
-// 临时根组件：Task 17 会替换为带 RouterView 的版本
-import { NConfigProvider, NMessageProvider, NH1 } from 'naive-ui'
+// 根组件：注入 Naive UI 上下文，渲染当前路由视图
+import { RouterView } from 'vue-router'
+import { NConfigProvider, NMessageProvider } from 'naive-ui'
 </script>
