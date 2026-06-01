@@ -22,7 +22,7 @@
 </template>
 
 <script setup lang="ts">
-import { nextTick, reactive, ref } from 'vue'
+import { nextTick, onUnmounted, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { NButton, NSpace, useMessage } from 'naive-ui'
 import { useAuthStore } from '@/stores/auth'
@@ -38,37 +38,50 @@ const message = useMessage()
 
 const messages = reactive<Msg[]>([])
 const sending = ref(false)
+const abortCtrl = ref<AbortController | null>(null)
 const bodyRef = ref<HTMLElement | null>(null)
 
 async function onSend(text: string) {
+  const assistantMsg = reactive<Msg>({ role: 'assistant', content: '' })
   messages.push({ role: 'user', content: text })
-  messages.push({ role: 'assistant', content: '' })
-  const idx = messages.length - 1
+  messages.push(assistantMsg)
   await scrollToBottom()
 
   sending.value = true
+  abortCtrl.value?.abort()
+  const ctrl = new AbortController()
+  abortCtrl.value = ctrl
+
   try {
-    await streamChat(text, {
-      onDelta: (piece) => {
-        messages[idx].content += piece
-        scrollToBottom()
+    await streamChat(
+      text,
+      {
+        onDelta: (piece) => {
+          assistantMsg.content += piece
+          scrollToBottom()
+        },
+        onError: (m) => {
+          message.error(m)
+          assistantMsg.content = assistantMsg.content || `（请求失败：${m}）`
+        },
       },
-      onError: (m) => {
-        message.error(m)
-        messages[idx].content = messages[idx].content || `（请求失败：${m}）`
-      },
-    })
+      ctrl.signal,
+    )
   } finally {
     sending.value = false
+    if (abortCtrl.value === ctrl) abortCtrl.value = null
     await scrollToBottom()
   }
 }
 
 async function onLogout() {
+  abortCtrl.value?.abort()
   await auth.logout()
   message.success('已退出')
   router.replace('/login')
 }
+
+onUnmounted(() => abortCtrl.value?.abort())
 
 async function scrollToBottom() {
   await nextTick()
