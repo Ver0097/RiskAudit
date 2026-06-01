@@ -28,6 +28,7 @@ import { NButton, NSpace, useMessage } from 'naive-ui'
 import { useAuthStore } from '@/stores/auth'
 import ChatMessage from '@/components/ChatMessage.vue'
 import ChatInput from '@/components/ChatInput.vue'
+import { streamChat } from '@/api/chat'
 
 interface Msg { role: 'user' | 'assistant'; content: string }
 
@@ -42,12 +43,21 @@ const bodyRef = ref<HTMLElement | null>(null)
 async function onSend(text: string) {
   messages.push({ role: 'user', content: text })
   messages.push({ role: 'assistant', content: '' })
+  const idx = messages.length - 1
   await scrollToBottom()
 
   sending.value = true
   try {
-    // SSE 接入将在 Task 20 实现
-    messages[messages.length - 1].content = '（占位回复 — 待 Task 20 接入流式）'
+    await streamChat(text, {
+      onDelta: (piece) => {
+        messages[idx].content += piece
+        scrollToBottom()
+      },
+      onError: (m) => {
+        message.error(m)
+        messages[idx].content = messages[idx].content || `（请求失败：${m}）`
+      },
+    })
   } finally {
     sending.value = false
     await scrollToBottom()
