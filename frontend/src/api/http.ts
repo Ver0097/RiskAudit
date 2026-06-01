@@ -13,21 +13,17 @@ export const http: AxiosInstance = axios.create({
 http.interceptors.request.use((config) => {
   const token = localStorage.getItem('access_token')
   if (token) {
-    config.headers.set('Authorization', `Bearer ${token}`)
+    config.headers['Authorization'] = `Bearer ${token}`
   }
   return config
 })
 
-// 响应拦截：401 时清理本地凭据并跳转登录页
+// 响应拦截：401 时只清理本地凭据，跳转交由路由守卫统一处理
 http.interceptors.response.use(
   (resp) => resp,
   (err: AxiosError) => {
     if (err.response?.status === 401) {
       localStorage.removeItem('access_token')
-      // 避免循环：仅在非登录页时跳转
-      if (location.pathname !== '/login') {
-        location.replace('/login')
-      }
     }
     return Promise.reject(err)
   },

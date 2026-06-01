@@ -37,8 +37,12 @@ router.beforeEach(async (to) => {
   if (!auth.user) {
     try {
       await auth.fetchMe()
-    } catch {
-      return { name: 'login' }
+    } catch (e: any) {
+      if (e?.response?.status === 401) {
+        await auth.logout()
+        return { name: 'login', query: { redirect: to.fullPath } }
+      }
+      // 网络/服务端错误，放行，让页面自行处理或重试
     }
   }
   return true
