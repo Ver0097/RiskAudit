@@ -63,8 +63,8 @@ export async function streamChat(
       if (done) break
       buffer += decoder.decode(value, { stream: true })
 
-      // SSE 帧以空行（\n\n）分割
-      const frames = buffer.split('\n\n')
+      // SSE 帧以空行分割：兼容 LF（\n\n）与 CRLF（\r\n\r\n），sse-starlette 默认走 CRLF
+      const frames = buffer.split(/\r?\n\r?\n/)
       buffer = frames.pop() ?? ''
 
       for (const raw of frames) {
@@ -73,7 +73,7 @@ export async function streamChat(
 
         let event = 'message'
         const dataLines: string[] = []
-        for (const line of raw.split('\n')) {
+        for (const line of raw.split(/\r?\n/)) {
           if (line.startsWith(':')) continue
           if (line.startsWith('event:')) event = line.slice(6).trim()
           else if (line.startsWith('data:')) dataLines.push(line.slice(5).trim())
