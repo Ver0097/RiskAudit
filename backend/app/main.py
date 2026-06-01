@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.api import auth as auth_router
+from app.api import chat as chat_router
 from app.config import get_settings
 
 
@@ -23,6 +24,7 @@ def create_app() -> FastAPI:
         return {"status": "ok"}
 
     app.include_router(auth_router.router)
+    app.include_router(chat_router.router)
     return app
 
 
