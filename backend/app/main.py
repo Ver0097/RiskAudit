@@ -1,9 +1,12 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+
+from app.api import auth as auth_router
 from app.config import get_settings
 
 
 def create_app() -> FastAPI:
+    """构建 FastAPI 应用实例并完成中间件 / 路由注册。"""
     settings = get_settings()
     app = FastAPI(title="灵工企业风控 Agent 系统", version="0.1.0")
 
@@ -19,6 +22,7 @@ def create_app() -> FastAPI:
     async def health() -> dict[str, str]:
         return {"status": "ok"}
 
+    app.include_router(auth_router.router)
     return app
 
 
